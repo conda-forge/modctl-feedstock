@@ -1,5 +1,5 @@
 context:
-  version: "0.2.0"
+  version: "0.2.1"
 
 package:
   name: modctl
@@ -7,11 +7,11 @@ package:
 
 source:
   url: https://github.com/modelpack/modctl/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: aba507fa6e3a928590520cc267cf0ec1351e01c7b88e5c746404781f409a473d
+  sha256: 0cea4fb7b6bf4a753ea2e6c2a737eec3ed00a2fd0d809f02eec070374e71462b
   target_directory: src
 
 build:
-  number: 1
+  number: 0
   script:
     - cd src
     - go-licenses save . --save_path ../library_licenses
