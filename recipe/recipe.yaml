@@ -12,29 +12,25 @@ source:
 build:
   number: 0
   script:
-    - go-licenses save . --save_path=library_licenses
-    - if: unix
-      then:
-        - BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        - SHORT_COMMIT_HASH="$(curl -s "https://api.github.com/repos/modelpack/modctl/commits/v${{ version }}" | jq -r '.sha' | cut -c 1-7)"
-        - go build -v -o "$PREFIX"/bin/modctl -ldflags="-s -w -X github.com/modelpack/modctl/pkg/version.BuildTime=${BUILD_TIME} -X github.com/modelpack/modctl/pkg/version.GitCommit=${SHORT_COMMIT_HASH} -X github.com/modelpack/modctl/pkg/version.GitVersion=${{ version }}" -trimpath .
-        # generate shell completions
-        - mkdir -p "$PREFIX"/share/bash-completion/completions "$PREFIX"/share/fish/vendor_completions.d "$PREFIX"/share/zsh/site-functions
-        - '"$PREFIX"/bin/modctl completion bash > "$PREFIX"/share/bash-completion/completions/modctl'
-        - '"$PREFIX"/bin/modctl completion fish > "$PREFIX"/share/fish/vendor_completions.d/modctl.fish'
-        - '"$PREFIX"/bin/modctl completion zsh  > "$PREFIX"/share/zsh/site-functions/_modctl'
-    - if: win
-      then:
-        - for /f "usebackq delims=" %%T in (`powershell -Command "[DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')"`) do set BUILD_TIME=%%T
-        - for /f "usebackq delims=" %%T in (`powershell -Command "((Invoke-RestMethod 'https://api.github.com/repos/modelpack/modctl/commits/v${{ version }}').sha).Substring(0, 7)"`) do set SHORT_COMMIT_HASH=%%T
-        - go build -v -o "%LIBRARY_BIN%"\modctl.exe -ldflags="-s -w -X github.com/modelpack/modctl/pkg/version.BuildTime=%BUILD_TIME% -X github.com/modelpack/modctl/pkg/version.GitCommit=%SHORT_COMMIT_HASH% -X github.com/modelpack/modctl/pkg/version.GitVersion=${{ version }}" -trimpath .
-        # generate shell completions
-        - mkdir "%LIBRARY_PREFIX%"\share\bash-completion\completions
-        - mkdir "%LIBRARY_PREFIX%"\share\fish\vendor_completions.d
-        - mkdir "%LIBRARY_PREFIX%"\share\zsh\site-functions
-        - '"%LIBRARY_BIN%"\modctl.exe completion bash > "%LIBRARY_PREFIX%"\share\bash-completion\completions\modctl'
-        - '"%LIBRARY_BIN%"\modctl.exe completion fish > "%LIBRARY_PREFIX%"\share\fish\vendor_completions.d\modctl.fish'
-        - '"%LIBRARY_BIN%"\modctl.exe completion zsh  > "%LIBRARY_PREFIX%"\share\zsh\site-functions\_modctl'
+    interpreter: nu
+    content:
+      - let prefix = $env.LIBRARY_PREFIX? | default $env.PREFIX
+      # build main app and generate license data
+      - let build_time = date now | format date "%Y-%m-%dT%H:%M:%SZ"
+      - let short_commit_hash = (http get https://api.github.com/repos/modelpack/modctl/commits/v${{ version }}).sha | str substring 0..6
+      - ^go build
+        -o ($prefix)/bin/
+        -v
+        -ldflags=$'-s -w -X github.com/modelpack/modctl/pkg/version.BuildTime=($build_time) -X github.com/modelpack/modctl/pkg/version.GitCommit=($short_commit_hash) -X github.com/modelpack/modctl/pkg/version.GitVersion=${{ version }}'
+        -trimpath
+        .
+      - ^go-licenses save . --save_path=library_licenses
+      # generate shell completions
+      - if: build_platform == host_platform
+        then:
+          - ^modctl completion bash | save --force ($prefix)/share/bash-completion/completions/modctl
+          - ^modctl completion fish | save --force ($prefix)/share/fish/vendor_completions.d/modctl.fish
+          - ^modctl completion zsh  | save --force ($prefix)/share/zsh/site-functions/_modctl
   skip:
     # Windows is currently unsupported, cf. https://github.com/modelpack/modctl/issues/472
     - win
@@ -43,6 +39,7 @@ requirements:
   build:
     - ${{ compiler("go-nocgo") }}
     - go-licenses
+    - nushell
 
 tests:
   - script:
