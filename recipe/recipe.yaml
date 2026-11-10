@@ -22,7 +22,6 @@ build:
         -o ($prefix)/bin/
         -v
         -ldflags=$'-s -w -X github.com/modelpack/modctl/pkg/version.BuildTime=($build_time) -X github.com/modelpack/modctl/pkg/version.GitCommit=($short_commit_hash) -X github.com/modelpack/modctl/pkg/version.GitVersion=${{ version }}'
-        -trimpath
         .
       - ^go-licenses save . --save_path=library_licenses
       # generate shell completions
