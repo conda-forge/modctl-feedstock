@@ -1,5 +1,5 @@
 context:
-  version: "0.2.2"
+  version: "0.2.3"
 
 package:
   name: modctl
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://github.com/modelpack/modctl/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 339f9db84db5c6e21168489561e4b09f5b57b77a784637afdc2939cae58eef60
+  sha256: 80eda1c07fbc4ea18df70e8f94073a8c3934b78c17c9cf1791f5fca8747cd203
 
 build:
   number: 0
@@ -18,11 +18,7 @@ build:
       # build main app and generate license data
       - let build_time = date now | format date "%Y-%m-%dT%H:%M:%SZ"
       - let short_commit_hash = (http get https://api.github.com/repos/modelpack/modctl/commits/v${{ version }}).sha | str substring 0..6
-      - ^go build
-        -o ($prefix)/bin/
-        -v
-        -ldflags=$'-s -w -X github.com/modelpack/modctl/pkg/version.BuildTime=($build_time) -X github.com/modelpack/modctl/pkg/version.GitCommit=($short_commit_hash) -X github.com/modelpack/modctl/pkg/version.GitVersion=${{ version }}'
-        .
+      - ^go build -o ($prefix)/bin/ -v -ldflags=$'-s -w -X github.com/modelpack/modctl/pkg/version.BuildTime=($build_time) -X github.com/modelpack/modctl/pkg/version.GitCommit=($short_commit_hash) -X github.com/modelpack/modctl/pkg/version.GitVersion=${{ version }}' .
       - ^go-licenses save . --save_path=library_licenses
       # generate shell completions
       - if: build_platform == host_platform
